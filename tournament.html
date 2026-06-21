@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4-Player Chess — Tournaments</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#1a1a2e; --surface:#16213e; --panel:#0f3460; --border:#2a2a4a;
+  --red:#e84040; --blue:#4488ff; --yellow:#f0c020; --green:#30c050;
+  --gold:#ffd700; --silver:#c0c0c0; --bronze:#cd7f32;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+body{background:var(--bg);color:#eee;font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 8px 48px;}
+h1{font-size:1.4rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#ccd;margin-bottom:4px;}
+.tagline{font-size:.76rem;color:#556;margin-bottom:16px;letter-spacing:.04em;}
+
+/* ── nav tabs ── */
+#nav{display:flex;gap:6px;margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px;}
+.nav-tab{flex:1;padding:7px 10px;border-radius:7px;border:none;background:none;color:#778;font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s;letter-spacing:.03em;}
+.nav-tab.active{background:var(--panel);color:#eee;}
+
+/* ── screens ── */
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:680px;gap:14px;}
+.screen.show{display:flex;}
+
+/* ── cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;width:100%;}
+.card h3{font-size:.88rem;color:#ccd;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:6px;}
+.card p{font-size:.74rem;color:#667;line-height:1.5;}
+.sect-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#445;font-weight:700;margin-bottom:2px;}
+
+/* ── form ── */
+.field-row{display:flex;gap:8px;align-items:center;}
+.field-row label{font-size:.76rem;color:#778;white-space:nowrap;min-width:80px;}
+input[type=text],input[type=email],input[type=password]{
+  flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);
+  border-radius:6px;color:#eee;font-family:var(--font);font-size:.86rem;
+  padding:7px 10px;outline:none;transition:border-color .2s;
+}
+input:focus{border-color:rgba(255,255,255,.4);}
+.action-btn{width:100%;padding:11px;border-radius:8px;background:linear-gradient(135deg,#1a4a80,#0f3460);
+  border:1px solid rgba(255,255,255,.2);color:#fff;font-family:var(--font);
+  font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;}
+.action-btn:hover{opacity:.9;transform:translateY(-1px);}
+.action-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.action-btn.secondary{background:rgba(255,255,255,.06);border-color:var(--border);color:#aab;}
+.action-btn.danger{background:linear-gradient(135deg,#6a1a1a,#3a0f0f);border-color:rgba(255,80,80,.3);}
+.action-btn.gold{background:linear-gradient(135deg,#6a5010,#3a2a00);border-color:rgba(255,200,0,.3);color:var(--gold);}
+.err{font-size:.74rem;color:#f88;min-height:16px;text-align:center;}
+.ok{font-size:.74rem;color:#4dc;min-height:16px;text-align:center;}
+
+/* ── user bar ── */
+#user-bar{display:none;align-items:center;gap:10px;width:100%;max-width:680px;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:8px 14px;margin-bottom:4px;}
+#user-bar.show{display:flex;}
+.ub-avatar{width:32px;height:32px;border-radius:50%;background:var(--panel);
+  border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;font-weight:700;color:#ccd;flex-shrink:0;}
+.ub-info{flex:1;}
+.ub-name{font-size:.86rem;font-weight:700;color:#eee;}
+.ub-elo{font-size:.72rem;color:#778;}
+.ub-badge{font-size:.64rem;padding:1px 6px;border-radius:3px;border:1px solid;margin-left:4px;}
+.ub-badge.tier-bronze{color:var(--bronze);border-color:var(--bronze);}
+.ub-badge.tier-silver{color:var(--silver);border-color:var(--silver);}
+.ub-badge.tier-gold{color:var(--gold);border-color:var(--gold);}
+.ub-badge.tier-diamond{color:#88eeff;border-color:#88eeff;}
+
+/* ── ELO / profile ── */
+.elo-big{font-size:3rem;font-weight:800;letter-spacing:.02em;text-align:center;
+  background:linear-gradient(135deg,#ffd700,#ffaa00);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.elo-label{text-align:center;font-size:.72rem;color:#556;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+.stat-box{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;}
+.stat-num{font-size:1.3rem;font-weight:700;color:#ccd;}
+.stat-lbl{font-size:.64rem;color:#556;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.elo-history{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;}
+.elo-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,.04);font-size:.74rem;}
+.elo-delta.pos{color:#4dc;}
+.elo-delta.neg{color:#f88;}
+.elo-opp{flex:1;color:#aab;}
+.elo-mode{font-size:.64rem;color:#556;}
+.elo-date{font-size:.62rem;color:#445;}
+
+/* ── leaderboard ── */
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid transparent;transition:border-color .2s;}
+.lb-row:hover{border-color:var(--border);}
+.lb-rank{width:26px;text-align:center;font-size:.82rem;font-weight:700;color:#556;flex-shrink:0;}
+.lb-rank.r1{color:var(--gold);}
+.lb-rank.r2{color:var(--silver);}
+.lb-rank.r3{color:var(--bronze);}
+.lb-avatar{width:28px;height:28px;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:#ccd;flex-shrink:0;}
+.lb-name{flex:1;font-size:.82rem;color:#ccd;font-weight:600;}
+.lb-elo{font-size:.82rem;font-weight:700;color:#ffd700;}
+.lb-wl{font-size:.68rem;color:#556;}
+.lb-self{background:rgba(68,136,255,.1);border-color:rgba(68,136,255,.3);}
+
+/* ── tournament ── */
+.t-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.t-header h3{flex:1;}
+.t-badge{font-size:.64rem;padding:2px 8px;border-radius:12px;font-weight:700;letter-spacing:.05em;}
+.t-badge.open{background:rgba(48,192,80,.18);color:#4dc;border:1px solid rgba(48,192,80,.3);}
+.t-badge.live{background:rgba(255,60,60,.18);color:#f88;border:1px solid rgba(255,60,60,.3);animation:blink-badge .9s ease-in-out infinite alternate;}
+.t-badge.done{background:rgba(255,255,255,.08);color:#556;border:1px solid var(--border);}
+@keyframes blink-badge{from{opacity:1;}to{opacity:.5;}}
+.t-mode{font-size:.7rem;color:#778;background:rgba(255,255,255,.06);border:1px solid var(--border);padding:2px 8px;border-radius:5px;}
+.t-info-row{display:flex;gap:14px;flex-wrap:wrap;}
+.t-info-item{font-size:.74rem;color:#778;display:flex;align-items:center;gap:4px;}
+.t-info-item b{color:#aab;}
+.t-players-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;}
+.t-player-chip{display:flex;align-items:center;gap:7px;padding:6px 9px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;font-size:.76rem;}
+.t-player-chip.me{border-color:rgba(68,136,255,.5);background:rgba(68,136,255,.1);}
+.t-player-chip.winner{border-color:rgba(255,215,0,.4);background:rgba(255,215,0,.08);}
+.chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.chip-name{flex:1;color:#ccd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chip-elo{font-size:.64rem;color:#556;}
+
+/* ── bracket ── */
+.bracket-wrap{overflow-x:auto;padding:8px 0;}
+.bracket{display:flex;gap:0;align-items:flex-start;}
+.bracket-round{display:flex;flex-direction:column;min-width:160px;}
+.bracket-round-title{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#445;text-align:center;padding:0 6px 8px;}
+.bracket-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1;}
+.bracket-match{display:flex;flex-direction:column;gap:2px;margin:6px 6px;position:relative;}
+.bracket-match::after{content:'';position:absolute;right:-6px;top:50%;width:6px;height:1px;background:var(--border);}
+.bracket-round:last-child .bracket-match::after{display:none;}
+.b-slot{display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:5px;font-size:.74rem;min-height:28px;}
+.b-slot.winner-slot{background:rgba(255,215,0,.1);border-color:rgba(255,215,0,.3);}
+.b-slot.loser-slot{opacity:.45;}
+.b-slot.bye-slot{opacity:.3;font-style:italic;}
+.b-slot-name{flex:1;color:#ccd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.b-slot-elo{font-size:.62rem;color:#556;}
+.b-slot-score{font-size:.76rem;font-weight:700;color:#ffd700;min-width:14px;text-align:right;}
+.connector-v{position:absolute;right:-6px;background:var(--border);width:1px;}
+
+/* ── create tournament form ── */
+.t-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.t-option{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;border:2px solid var(--border);cursor:pointer;background:rgba(255,255,255,.03);transition:border-color .2s,background .2s;font-size:.78rem;color:#aab;}
+.t-option.chosen{border-color:rgba(68,136,255,.6);background:rgba(68,136,255,.1);color:#ccd;}
+.t-option input{display:none;}
+
+/* ── empty state ── */
+.empty-state{text-align:center;padding:32px 16px;color:#445;font-size:.82rem;}
+.empty-state .es-icon{font-size:2.4rem;margin-bottom:8px;display:block;}
+
+/* ── notification toast ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 20px;font-size:.82rem;color:#ccd;transition:transform .3s;z-index:999;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── modal ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+#modal-overlay.show{display:flex;}
+#modal-box{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:24px 28px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;}
+#modal-box h3{font-size:.95rem;color:#ccd;font-weight:700;}
+#modal-box p{font-size:.78rem;color:#778;line-height:1.5;}
+
+/* ── responsive ── */
+@media(max-width:500px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .t-form-grid{grid-template-columns:1fr;}
+  .bracket-round{min-width:130px;}
+}
+</style>
+</head>
+<body>
+
+<h1>♟ 4-Player Chess</h1>
+<p class="tagline">Tournaments · Rankings · Profiles</p>
+
+<!-- User bar (shown when logged in) -->
+<div id="user-bar">
+  <div class="ub-avatar" id="ub-avatar">?</div>
+  <div class="ub-info">
+    <div class="ub-name" id="ub-name">—</div>
+    <div class="ub-elo" id="ub-elo-line">ELO: — &nbsp;·&nbsp; W/L: —/—</div>
+  </div>
+  <button class="action-btn secondary" style="width:auto;padding:5px 12px;font-size:.74rem;" onclick="signOut()">Sign Out</button>
+</div>
+
+<!-- Nav -->
+<div id="nav">
+  <button class="nav-tab active" onclick="goTab('tab-home')">🏠 Home</button>
+  <button class="nav-tab" onclick="goTab('tab-profile')">👤 Profile</button>
+  <button class="nav-tab" onclick="goTab('tab-leaderboard')">🏆 Rankings</button>
+  <button class="nav-tab" onclick="goTab('tab-tournaments')">⚔ Tournaments</button>
+</div>
+
+<!-- ═══════════════════════════════
+     HOME TAB
+═══════════════════════════════ -->
+<div id="tab-home" class="screen show">
+
+  <!-- Auth card (hidden when logged in) -->
+  <div class="card" id="auth-card">
+    <h3>👤 Sign In / Register</h3>
+    <p>Create a free account to track your ELO rating, join tournaments, and appear on the leaderboard. No email verification needed.</p>
+    <div class="field-row"><label>Username</label><input type="text" id="auth-username" placeholder="e.g. ChessMaster99" maxlength="20"></div>
+    <div class="field-row"><label>Password</label><input type="password" id="auth-password" placeholder="Min 6 characters"></div>
+    <div id="auth-err" class="err"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="action-btn" onclick="doRegister()">Register</button>
+      <button class="action-btn secondary" onclick="doLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Play options (always visible) -->
+  <div class="card" id="play-card">
+    <h3>▶ Play Now</h3>
+    <a href="four-player-chess.html" target="_blank" style="text-decoration:none;">
+      <button class="action-btn" style="margin-bottom:6px;">🎮 Open Game (Local / Online)</button>
+    </a>
+    <p>Open the game in a new tab. Come back here to register for tournaments and check rankings.</p>
+  </div>
+
+  <!-- Quick stats (shown when logged in) -->
+  <div class="card" id="quick-stats-card" style="display:none;">
+    <h3>📊 Your Stats</h3>
+    <div style="display:flex;align-items:center;gap:24px;justify-content:center;padding:8px 0;">
+      <div>
+        <div class="elo-big" id="qs-elo">1200</div>
+        <div class="elo-label">ELO Rating</div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat-box"><div class="stat-num" id="qs-wins">0</div><div class="stat-lbl">Wins</div></div>
+        <div class="stat-box"><div class="stat-num" id="qs-losses">0</div><div class="stat-lbl">Losses</div></div>
+        <div class="stat-box"><div class="stat-num" id="qs-games">0</div><div class="stat-lbl">Games</div></div>
+        <div class="stat-box"><div class="stat-num" id="qs-tourn">0</div><div class="stat-lbl">Tourneys</div></div>
+      </div>
+    </div>
+    <button class="action-btn secondary" onclick="goTab('tab-tournaments')">⚔ Browse Tournaments</button>
+  </div>
+
+  <!-- Supabase config -->
+  <div class="card" id="sb-config-card">
+    <h3>⚙ Supabase Setup <span style="font-size:.68rem;color:#556;font-weight:400;">(one-time)</span></h3>
+    <p>Accounts and ELO ratings are stored in Supabase — a free Postgres database. Takes 3 minutes to set up.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--panel);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;">1</div>
+        <div><b style="font-size:.8rem;color:#ccd;display:block;">Create free Supabase project</b>
+        <p>Go to <a href="https://supabase.com" target="_blank" style="color:#4488ff;">supabase.com</a> → New project → give it a name → set a database password → Create.</p></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--panel);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;">2</div>
+        <div><b style="font-size:.8rem;color:#ccd;display:block;">Run the SQL setup</b>
+        <p>In Supabase → SQL Editor → paste the SQL from the box below → Run.</p>
+        <textarea id="setup-sql" readonly style="width:100%;margin-top:6px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:5px;color:#adf;font-family:monospace;font-size:.68rem;padding:6px;resize:vertical;min-height:80px;"></textarea>
+        <button class="action-btn secondary" style="margin-top:4px;padding:5px;" onclick="copySQL()">📋 Copy SQL</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--panel);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;">3</div>
+        <div style="flex:1;"><b style="font-size:.8rem;color:#ccd;display:block;">Paste your project keys</b>
+        <p>Settings → API → copy Project URL and anon public key.</p>
+        <div class="field-row" style="margin-top:6px;"><label>Project URL</label><input type="text" id="sb-url" placeholder="https://xxxx.supabase.co"></div>
+        <div class="field-row" style="margin-top:6px;"><label>Anon Key</label><input type="text" id="sb-key" placeholder="eyJ..." style="font-size:.72rem;"></div>
+        <div id="sb-status" class="ok" style="margin-top:4px;"></div>
+        <button class="action-btn" style="margin-top:6px;" onclick="saveSupabaseConfig()">Save & Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     PROFILE TAB
+═══════════════════════════════ -->
+<div id="tab-profile" class="screen">
+  <div class="card" id="profile-login-prompt" style="display:none;">
+    <div class="empty-state"><span class="es-icon">👤</span>Sign in to view your profile.</div>
+  </div>
+  <div id="profile-content" style="display:none;width:100%;display:flex;flex-direction:column;gap:14px;">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--panel);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#ccd;flex-shrink:0;" id="profile-avatar">?</div>
+        <div style="flex:1;">
+          <div style="font-size:1.1rem;font-weight:700;color:#eee;" id="profile-name">—</div>
+          <div style="font-size:.74rem;color:#556;" id="profile-joined">Joined —</div>
+        </div>
+        <span class="ub-badge" id="profile-tier-badge">—</span>
+      </div>
+      <div style="display:flex;justify-content:center;padding:8px 0;">
+        <div>
+          <div class="elo-big" id="profile-elo">1200</div>
+          <div class="elo-label">ELO Rating</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="p-wins">0</div><div class="stat-lbl">Wins</div></div>
+        <div class="stat-box"><div class="stat-num" id="p-losses">0</div><div class="stat-lbl">Losses</div></div>
+        <div class="stat-box"><div class="stat-num" id="p-draws">0</div><div class="stat-lbl">Draws</div></div>
+        <div class="stat-box"><div class="stat-num" id="p-games">0</div><div class="stat-lbl">Games</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📈 ELO History</h3>
+      <div class="elo-history" id="elo-history-list">
+        <div class="empty-state" style="padding:16px;"><span class="es-icon" style="font-size:1.4rem;">📭</span>No games yet — play to earn ELO!</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>⚔ Tournament History</h3>
+      <div id="tourn-history-list">
+        <div class="empty-state" style="padding:16px;"><span class="es-icon" style="font-size:1.4rem;">🏆</span>No tournaments entered yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     LEADERBOARD TAB
+═══════════════════════════════ -->
+<div id="tab-leaderboard" class="screen">
+  <div class="card" style="width:100%;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h3 style="flex:1;">🏆 Global Rankings</h3>
+      <select id="lb-mode-filter" onchange="loadLeaderboard()" style="font-size:.74rem;">
+        <option value="all">All modes</option>
+        <option value="ffa">Free-for-all</option>
+        <option value="teams">Teams</option>
+      </select>
+      <button class="action-btn secondary" style="width:auto;padding:5px 10px;font-size:.72rem;" onclick="loadLeaderboard()">↻ Refresh</button>
+    </div>
+    <div id="lb-list" style="display:flex;flex-direction:column;gap:6px;">
+      <div class="empty-state"><span class="es-icon">⏳</span>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     TOURNAMENTS TAB
+═══════════════════════════════ -->
+<div id="tab-tournaments" class="screen">
+
+  <!-- Create tournament -->
+  <div class="card" id="create-tourn-card">
+    <h3>➕ Create Tournament</h3>
+    <div class="field-row"><label>Name</label><input type="text" id="t-name" placeholder="e.g. Weekend Open" maxlength="32"></div>
+
+    <div class="sect-label">Format</div>
+    <div class="t-form-grid">
+      <label class="t-option chosen" id="opt-ffa"><input type="radio" name="t-format" value="ffa" checked onchange="updateFormatUI()"> 🎯 Free-for-All<br><span style="font-size:.66rem;color:#556;">Every player for themselves</span></label>
+      <label class="t-option" id="opt-teams"><input type="radio" name="t-format" value="teams" onchange="updateFormatUI()"> 🤝 Teams (2v2)<br><span style="font-size:.66rem;color:#556;">Red+Green vs Blue+Yellow</span></label>
+    </div>
+
+    <div class="sect-label">Players per match</div>
+    <div class="t-form-grid">
+      <label class="t-option chosen" id="opt-4p"><input type="radio" name="t-size" value="4" checked onchange="updateFormatUI()"> ♟ 4-Player<br><span style="font-size:.66rem;color:#556;">Full board, all sides</span></label>
+      <label class="t-option" id="opt-2p"><input type="radio" name="t-size" value="2" onchange="updateFormatUI()"> ⚔ 1v1<br><span style="font-size:.66rem;color:#556;">Two players, two sides</span></label>
+    </div>
+
+    <div class="field-row">
+      <label>Max players</label>
+      <select id="t-maxp">
+        <option value="4">4</option>
+        <option value="8" selected>8</option>
+        <option value="16">16</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label>ELO min</label>
+      <input type="text" id="t-elo-min" placeholder="0  (no minimum)" style="max-width:160px;">
+    </div>
+    <div id="create-tourn-err" class="err"></div>
+    <button class="action-btn gold" onclick="createTournament()">🏆 Create Tournament</button>
+  </div>
+
+  <!-- Tournament list -->
+  <div class="card" style="width:100%;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <h3 style="flex:1;">⚔ Active Tournaments</h3>
+      <button class="action-btn secondary" style="width:auto;padding:5px 10px;font-size:.72rem;" onclick="loadTournaments()">↻ Refresh</button>
+    </div>
+    <div id="tourn-list" style="display:flex;flex-direction:column;gap:10px;">
+      <div class="empty-state"><span class="es-icon">⏳</span>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-body"></p>
+    <div id="modal-err" class="err"></div>
+    <div style="display:flex;gap:8px;" id="modal-btns"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+//  SUPABASE  (loaded dynamically — no install)
+// ═══════════════════════════════════════════════════
+let supabase = null;
+
+async function initSupabase(url, key) {
+  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+  supabase = createClient(url, key);
+  return supabase;
+}
+
+// ═══════════════════════════════════════════════════
+//  SETUP SQL  (shown to user for one-time DB setup)
+// ═══════════════════════════════════════════════════
+const SETUP_SQL = `
+-- Run this once in Supabase SQL Editor
+
+create table if not exists profiles (
+  id uuid primary key default gen_random_uuid(),
+  username text unique not null,
+  password_hash text not null,
+  elo_ffa integer default 1200,
+  elo_teams integer default 1200,
+  wins integer default 0,
+  losses integer default 0,
+  draws integer default 0,
+  games_played integer default 0,
+  tournaments_entered integer default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists elo_history (
+  id bigserial primary key,
+  player_id uuid references profiles(id),
+  delta integer not null,
+  elo_after integer not null,
+  opponent text,
+  result text,
+  mode text default 'ffa',
+  played_at timestamptz default now()
+);
+
+create table if not exists tournaments (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  format text not null,
+  match_size integer not null,
+  max_players integer not null,
+  elo_min integer default 0,
+  status text default 'open',
+  bracket jsonb,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now()
+);
+
+create table if not exists tournament_players (
+  tournament_id uuid references tournaments(id),
+  player_id uuid references profiles(id),
+  username text not null,
+  elo_at_join integer not null,
+  result text,
+  primary key (tournament_id, player_id)
+);
+`.trim();
+
+document.getElementById('setup-sql').value = SETUP_SQL;
+
+window.copySQL = function() {
+  navigator.clipboard.writeText(SETUP_SQL).then(() => toast('SQL copied to clipboard!'));
+};
+
+// ═══════════════════════════════════════════════════
+//  CONFIG PERSISTENCE
+// ═══════════════════════════════════════════════════
+const SB_URL_KEY = 'chess_sb_url';
+const SB_KEY_KEY = 'chess_sb_key';
+const SESSION_KEY = 'chess_session';
+
+window.saveSupabaseConfig = async function() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url.startsWith('https://') || !key.startsWith('eyJ')) {
+    setSbStatus('❌ Check your URL and key format.', '#f88'); return;
+  }
+  setSbStatus('Connecting…', '#778');
+  try {
+    await initSupabase(url, key);
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+    if (error && error.code !== 'PGRST116') throw error;
+    localStorage.setItem(SB_URL_KEY, url);
+    localStorage.setItem(SB_KEY_KEY, key);
+    setSbStatus('✅ Connected! You can now register.', '#4dc');
+    document.getElementById('sb-config-card').style.display = 'none';
+    loadSession();
+  } catch(e) {
+    setSbStatus(`❌ ${e.message}`, '#f88');
+  }
+};
+
+function setSbStatus(msg, color) {
+  const el = document.getElementById('sb-status');
+  el.textContent = msg; el.style.color = color || '#778';
+}
+
+// ═══════════════════════════════════════════════════
+//  SESSION (simple — store user id + username in localStorage)
+// ═══════════════════════════════════════════════════
+let currentUser = null; // { id, username, elo_ffa, elo_teams, wins, losses, draws, games_played, tournaments_entered }
+
+async function loadSession() {
+  const url = localStorage.getItem(SB_URL_KEY);
+  const key = localStorage.getItem(SB_KEY_KEY);
+  if (!url || !key) { showLoggedOut(); return; }
+  if (!supabase) await initSupabase(url, key);
+
+  document.getElementById('sb-url').value = url;
+  document.getElementById('sb-key').value = key;
+  document.getElementById('sb-config-card').style.display = 'none';
+
+  const savedId = localStorage.getItem(SESSION_KEY);
+  if (savedId) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', savedId).single();
+    if (data) { currentUser = data; showLoggedIn(); return; }
+  }
+  showLoggedOut();
+}
+
+function showLoggedIn() {
+  document.getElementById('auth-card').style.display = 'none';
+  document.getElementById('user-bar').classList.add('show');
+  document.getElementById('quick-stats-card').style.display = '';
+  document.getElementById('profile-login-prompt').style.display = 'none';
+  document.getElementById('profile-content').style.display = 'flex';
+  renderUserBar();
+  renderQuickStats();
+  renderProfile();
+  loadLeaderboard();
+  loadTournaments();
+}
+
+function showLoggedOut() {
+  currentUser = null;
+  document.getElementById('auth-card').style.display = '';
+  document.getElementById('user-bar').classList.remove('show');
+  document.getElementById('quick-stats-card').style.display = 'none';
+  document.getElementById('profile-login-prompt').style.display = '';
+  document.getElementById('profile-content').style.display = 'none';
+  loadLeaderboard();
+  loadTournaments();
+}
+
+window.signOut = function() {
+  localStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+  showLoggedOut();
+  toast('Signed out.');
+};
+
+// ═══════════════════════════════════════════════════
+//  AUTH  (username + bcrypt-like hash via SHA-256)
+// ═══════════════════════════════════════════════════
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('chess_salt_' + pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+window.doRegister = async function() {
+  if (!supabase) { setAuthErr('Connect to Supabase first (see Setup below).'); return; }
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!username || username.length < 3) { setAuthErr('Username must be at least 3 characters.'); return; }
+  if (!password || password.length < 6) { setAuthErr('Password must be at least 6 characters.'); return; }
+  setAuthErr('Creating account…');
+  const hash = await hashPassword(password);
+  const { data, error } = await supabase.from('profiles').insert({ username, password_hash: hash }).select().single();
+  if (error) { setAuthErr(error.code === '23505' ? 'Username already taken.' : error.message); return; }
+  currentUser = data;
+  localStorage.setItem(SESSION_KEY, data.id);
+  toast(`Welcome, ${username}! 🎉`);
+  showLoggedIn();
+};
+
+window.doLogin = async function() {
+  if (!supabase) { setAuthErr('Connect to Supabase first (see Setup below).'); return; }
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!username || !password) { setAuthErr('Enter username and password.'); return; }
+  setAuthErr('Signing in…');
+  const hash = await hashPassword(password);
+  const { data, error } = await supabase.from('profiles').select('*').eq('username', username).eq('password_hash', hash).single();
+  if (error || !data) { setAuthErr('Wrong username or password.'); return; }
+  currentUser = data;
+  localStorage.setItem(SESSION_KEY, data.id);
+  toast(`Welcome back, ${username}!`);
+  showLoggedIn();
+};
+
+function setAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
+
+// ═══════════════════════════════════════════════════
+//  ELO ENGINE
+// ═══════════════════════════════════════════════════
+// Standard Elo formula, K=32, adapted for 4-player
+function calcElo(myElo, opponentElos, result) {
+  // result: 'win'=1, 'draw'=0.5, 'loss'=0
+  const K = 32;
+  const avgOppElo = opponentElos.reduce((a, b) => a + b, 0) / opponentElos.length;
+  const expected = 1 / (1 + Math.pow(10, (avgOppElo - myElo) / 400));
+  const actual = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0;
+  return Math.round(K * (actual - expected));
+}
+
+// Called from game page via postMessage after a game ends
+window.addEventListener('message', async (e) => {
+  if (e.data?.type !== 'CHESS_GAME_RESULT') return;
+  if (!currentUser || !supabase) return;
+  const { winners, players, mode } = e.data; // winners: [colors], players: {color: {name, elo}}
+  const myColor = Object.entries(players).find(([c, p]) => p.name === currentUser.username)?.[0];
+  if (!myColor) return;
+
+  const result = winners.includes(myColor) ? 'win' : winners.length === 0 ? 'draw' : 'loss';
+  const eloField = mode === 'teams' ? 'elo_teams' : 'elo_ffa';
+  const myElo = currentUser[eloField];
+  const oppElos = Object.entries(players).filter(([c]) => c !== myColor).map(([, p]) => p.elo || 1200);
+  const delta = calcElo(myElo, oppElos, result);
+
+  // Update profile
+  const updates = {
+    [eloField]: myElo + delta,
+    games_played: currentUser.games_played + 1,
+    wins: currentUser.wins + (result === 'win' ? 1 : 0),
+    losses: currentUser.losses + (result === 'loss' ? 1 : 0),
+    draws: currentUser.draws + (result === 'draw' ? 1 : 0),
+  };
+  await supabase.from('profiles').update(updates).eq('id', currentUser.id);
+
+  // Log elo history
+  const oppNames = Object.entries(players).filter(([c]) => c !== myColor).map(([, p]) => p.name).join(', ');
+  await supabase.from('elo_history').insert({
+    player_id: currentUser.id,
+    delta, elo_after: myElo + delta,
+    opponent: oppNames, result, mode
+  });
+
+  currentUser = { ...currentUser, ...updates };
+  renderUserBar(); renderQuickStats(); renderProfile();
+  toast(`ELO ${delta >= 0 ? '+' : ''}${delta} → ${myElo + delta}`);
+});
+
+// ═══════════════════════════════════════════════════
+//  RENDER USER BAR
+// ═══════════════════════════════════════════════════
+function tierInfo(elo) {
+  if (elo >= 1800) return { label: 'Diamond', cls: 'tier-diamond' };
+  if (elo >= 1500) return { label: 'Gold', cls: 'tier-gold' };
+  if (elo >= 1300) return { label: 'Silver', cls: 'tier-silver' };
+  return { label: 'Bronze', cls: 'tier-bronze' };
+}
+
+function renderUserBar() {
+  if (!currentUser) return;
+  const elo = Math.max(currentUser.elo_ffa, currentUser.elo_teams);
+  const tier = tierInfo(elo);
+  document.getElementById('ub-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('ub-name').textContent = currentUser.username;
+  document.getElementById('ub-elo-line').textContent =
+    `ELO: ${elo} · W/L: ${currentUser.wins}/${currentUser.losses}`;
+}
+
+// ═══════════════════════════════════════════════════
+//  QUICK STATS
+// ═══════════════════════════════════════════════════
+function renderQuickStats() {
+  if (!currentUser) return;
+  const elo = Math.max(currentUser.elo_ffa, currentUser.elo_teams);
+  document.getElementById('qs-elo').textContent = elo;
+  document.getElementById('qs-wins').textContent = currentUser.wins;
+  document.getElementById('qs-losses').textContent = currentUser.losses;
+  document.getElementById('qs-games').textContent = currentUser.games_played;
+  document.getElementById('qs-tourn').textContent = currentUser.tournaments_entered;
+}
+
+// ═══════════════════════════════════════════════════
+//  PROFILE TAB
+// ═══════════════════════════════════════════════════
+async function renderProfile() {
+  if (!currentUser || !supabase) return;
+  const elo = Math.max(currentUser.elo_ffa, currentUser.elo_teams);
+  const tier = tierInfo(elo);
+  document.getElementById('profile-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('profile-name').textContent = currentUser.username;
+  document.getElementById('profile-joined').textContent =
+    'Joined ' + new Date(currentUser.created_at).toLocaleDateString();
+  document.getElementById('profile-elo').textContent = elo;
+  const badge = document.getElementById('profile-tier-badge');
+  badge.textContent = tier.label; badge.className = `ub-badge ${tier.cls}`;
+  document.getElementById('p-wins').textContent = currentUser.wins;
+  document.getElementById('p-losses').textContent = currentUser.losses;
+  document.getElementById('p-draws').textContent = currentUser.draws;
+  document.getElementById('p-games').textContent = currentUser.games_played;
+
+  // ELO history
+  const { data: hist } = await supabase.from('elo_history')
+    .select('*').eq('player_id', currentUser.id)
+    .order('played_at', { ascending: false }).limit(30);
+
+  const histEl = document.getElementById('elo-history-list');
+  if (!hist || hist.length === 0) {
+    histEl.innerHTML = '<div class="empty-state" style="padding:16px;"><span class="es-icon" style="font-size:1.4rem;">📭</span>No games yet.</div>';
+  } else {
+    histEl.innerHTML = hist.map(h => `
+      <div class="elo-row">
+        <span class="elo-delta ${h.delta >= 0 ? 'pos' : 'neg'}">${h.delta >= 0 ? '+' : ''}${h.delta}</span>
+        <span class="elo-opp">vs ${h.opponent || '—'}</span>
+        <span class="elo-mode">${h.mode}</span>
+        <span style="color:#aab;font-size:.74rem;">${h.result}</span>
+        <span class="elo-date">${new Date(h.played_at).toLocaleDateString()}</span>
+      </div>`).join('');
+  }
+
+  // Tournament history
+  const { data: th } = await supabase.from('tournament_players')
+    .select('*, tournaments(name, format, status)')
+    .eq('player_id', currentUser.id)
+    .order('tournaments(created_at)', { ascending: false });
+  const thEl = document.getElementById('tourn-history-list');
+  if (!th || th.length === 0) {
+    thEl.innerHTML = '<div class="empty-state" style="padding:16px;"><span class="es-icon" style="font-size:1.4rem;">🏆</span>No tournaments entered yet.</div>';
+  } else {
+    thEl.innerHTML = th.map(t => `
+      <div class="lb-row" style="margin-bottom:4px;">
+        <span style="flex:1;font-size:.8rem;color:#ccd;">${t.tournaments?.name || '—'}</span>
+        <span class="t-badge ${t.tournaments?.status==='done'?'done':t.tournaments?.status==='live'?'live':'open'}">${t.tournaments?.status||'?'}</span>
+        <span style="font-size:.74rem;color:#778;margin-left:8px;">${t.result||'—'}</span>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  LEADERBOARD
+// ═══════════════════════════════════════════════════
+window.loadLeaderboard = async function() {
+  if (!supabase) return;
+  const mode = document.getElementById('lb-mode-filter').value;
+  const eloField = mode === 'teams' ? 'elo_teams' : mode === 'ffa' ? 'elo_ffa' : 'elo_ffa';
+  const { data } = await supabase.from('profiles')
+    .select('id, username, elo_ffa, elo_teams, wins, losses, games_played')
+    .order(eloField, { ascending: false }).limit(50);
+
+  const el = document.getElementById('lb-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="es-icon">🏆</span>No players yet — be the first to register!</div>'; return;
+  }
+  el.innerHTML = data.map((p, i) => {
+    const elo = mode === 'teams' ? p.elo_teams : p.elo_ffa;
+    const rankClass = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+    const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+    const isMe = currentUser?.id === p.id;
+    return `<div class="lb-row ${isMe ? 'lb-self' : ''}">
+      <div class="lb-rank ${rankClass}">${rankIcon}</div>
+      <div class="lb-avatar">${p.username[0].toUpperCase()}</div>
+      <div class="lb-name">${p.username}${isMe ? ' <span style="font-size:.62rem;color:#4488ff;">(you)</span>' : ''}</div>
+      <div class="lb-wl">${p.wins}W / ${p.losses}L</div>
+      <div class="lb-elo">${elo}</div>
+    </div>`;
+  }).join('');
+};
+
+// ═══════════════════════════════════════════════════
+//  TOURNAMENT FORMAT UI
+// ═══════════════════════════════════════════════════
+window.updateFormatUI = function() {
+  ['ffa','teams'].forEach(v => {
+    const el = document.getElementById(`opt-${v}`);
+    if (el) el.classList.toggle('chosen', el.querySelector('input').checked);
+  });
+  ['4p','2p'].forEach(v => {
+    const el = document.getElementById(`opt-${v}`);
+    if (el) el.classList.toggle('chosen', el.querySelector('input').checked);
+  });
+};
+
+// ═══════════════════════════════════════════════════
+//  CREATE TOURNAMENT
+// ═══════════════════════════════════════════════════
+window.createTournament = async function() {
+  if (!currentUser) { document.getElementById('create-tourn-err').textContent = 'Sign in first.'; return; }
+  if (!supabase)     { document.getElementById('create-tourn-err').textContent = 'Connect Supabase first.'; return; }
+  const name    = document.getElementById('t-name').value.trim();
+  const format  = document.querySelector('input[name="t-format"]:checked').value;
+  const size    = parseInt(document.querySelector('input[name="t-size"]:checked').value);
+  const maxp    = parseInt(document.getElementById('t-maxp').value);
+  const eloMin  = parseInt(document.getElementById('t-elo-min').value) || 0;
+
+  if (!name) { document.getElementById('create-tourn-err').textContent = 'Enter a tournament name.'; return; }
+  document.getElementById('create-tourn-err').textContent = '';
+
+  const { data, error } = await supabase.from('tournaments').insert({
+    name, format, match_size: size, max_players: maxp, elo_min: eloMin,
+    created_by: currentUser.id, status: 'open'
+  }).select().single();
+
+  if (error) { document.getElementById('create-tourn-err').textContent = error.message; return; }
+  toast(`Tournament "${name}" created! 🏆`);
+  document.getElementById('t-name').value = '';
+  loadTournaments();
+};
+
+// ═══════════════════════════════════════════════════
+//  LOAD TOURNAMENTS
+// ═══════════════════════════════════════════════════
+window.loadTournaments = async function() {
+  if (!supabase) return;
+  const { data } = await supabase.from('tournaments')
+    .select('*, tournament_players(player_id, username, elo_at_join)')
+    .order('created_at', { ascending: false }).limit(20);
+
+  const el = document.getElementById('tourn-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="es-icon">⚔</span>No tournaments yet — create one above!</div>'; return;
+  }
+  el.innerHTML = data.map(t => renderTournamentCard(t)).join('');
+};
+
+function renderTournamentCard(t) {
+  const players = t.tournament_players || [];
+  const isMember = players.some(p => p.player_id === currentUser?.id);
+  const isCreator = t.created_by === currentUser?.id;
+  const full = players.length >= t.max_players;
+  const modeLabel = t.format === 'teams' ? '🤝 Teams 2v2' : '🎯 Free-for-All';
+  const sizeLabel = t.match_size === 2 ? '1v1' : '4-Player';
+
+  const playersHtml = `
+    <div class="t-players-grid">
+      ${players.map(p => `
+        <div class="t-player-chip ${p.player_id === currentUser?.id ? 'me' : ''} ${p.result === 'winner' ? 'winner' : ''}">
+          <div class="chip-dot" style="background:${['#e84040','#4488ff','#30c050','#f0c020'][players.indexOf(p)%4]}"></div>
+          <span class="chip-name">${p.username}</span>
+          <span class="chip-elo">${p.elo_at_join}</span>
+        </div>`).join('')}
+      ${Array.from({length: t.max_players - players.length}, () =>
+        `<div class="t-player-chip" style="opacity:.25;"><div class="chip-dot" style="background:#445"></div><span class="chip-name" style="color:#445">Empty slot</span></div>`
+      ).join('')}
+    </div>`;
+
+  const bracket = t.bracket ? renderBracket(t.bracket, players) : '';
+
+  const actions = `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+    ${t.status === 'open' && currentUser && !isMember && !full ?
+      `<button class="action-btn" style="padding:6px 12px;font-size:.76rem;" onclick="joinTournament('${t.id}')">Join</button>` : ''}
+    ${t.status === 'open' && currentUser && isMember && !isCreator ?
+      `<button class="action-btn secondary" style="padding:6px 12px;font-size:.76rem;" onclick="leaveTournament('${t.id}')">Leave</button>` : ''}
+    ${t.status === 'open' && isCreator && players.length >= 2 ?
+      `<button class="action-btn gold" style="padding:6px 12px;font-size:.76rem;" onclick="startTournament('${t.id}')">▶ Start</button>` : ''}
+    ${t.status === 'live' && isCreator ?
+      `<button class="action-btn secondary" style="padding:6px 12px;font-size:.76rem;" onclick="openReportModal('${t.id}')">📋 Report Result</button>` : ''}
+    ${isCreator ?
+      `<button class="action-btn danger" style="padding:6px 12px;font-size:.76rem;" onclick="deleteTournament('${t.id}')">🗑</button>` : ''}
+  </div>`;
+
+  return `<div class="card">
+    <div class="t-header">
+      <h3>${t.name}</h3>
+      <span class="t-badge ${t.status}">${t.status}</span>
+      <span class="t-mode">${modeLabel} · ${sizeLabel}</span>
+    </div>
+    <div class="t-info-row">
+      <div class="t-info-item">👥 <b>${players.length}/${t.max_players}</b> players</div>
+      <div class="t-info-item">📊 <b>${t.elo_min > 0 ? t.elo_min + '+' : 'Any'}</b> ELO</div>
+    </div>
+    ${playersHtml}
+    ${bracket}
+    ${actions}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  JOIN / LEAVE TOURNAMENT
+// ═══════════════════════════════════════════════════
+window.joinTournament = async function(tid) {
+  if (!currentUser) { toast('Sign in first.'); return; }
+  const { data: t } = await supabase.from('tournaments').select('*').eq('id', tid).single();
+  if (!t) return;
+  const eloField = t.format === 'teams' ? 'elo_teams' : 'elo_ffa';
+  const myElo = currentUser[eloField];
+  if (myElo < t.elo_min) { toast(`Need ${t.elo_min}+ ELO to join.`); return; }
+
+  const { error } = await supabase.from('tournament_players').insert({
+    tournament_id: tid, player_id: currentUser.id,
+    username: currentUser.username, elo_at_join: myElo
+  });
+  if (error) { toast('Could not join: ' + error.message); return; }
+
+  await supabase.from('profiles').update({ tournaments_entered: currentUser.tournaments_entered + 1 }).eq('id', currentUser.id);
+  currentUser.tournaments_entered++;
+  toast('Joined tournament! ⚔');
+  loadTournaments();
+};
+
+window.leaveTournament = async function(tid) {
+  await supabase.from('tournament_players').delete().eq('tournament_id', tid).eq('player_id', currentUser.id);
+  toast('Left tournament.');
+  loadTournaments();
+};
+
+// ═══════════════════════════════════════════════════
+//  START TOURNAMENT — generate bracket
+// ═══════════════════════════════════════════════════
+window.startTournament = async function(tid) {
+  const { data: t } = await supabase.from('tournaments')
+    .select('*, tournament_players(player_id, username, elo_at_join)')
+    .eq('id', tid).single();
+
+  const players = [...(t.tournament_players || [])].sort((a, b) => b.elo_at_join - a.elo_at_join);
+  const bracket = generateBracket(players, t.match_size);
+
+  await supabase.from('tournaments').update({ status: 'live', bracket }).eq('id', tid);
+  toast('Tournament started! Bracket generated. ⚔');
+  loadTournaments();
+};
+
+// ═══════════════════════════════════════════════════
+//  BRACKET GENERATION  (single-elimination)
+// ═══════════════════════════════════════════════════
+function generateBracket(players, matchSize) {
+  // Seed players: #1 vs last, #2 vs second-last (standard seeding)
+  const n = players.length;
+  // Pad to next power of 2 (for 1v1) or power of matchSize
+  const slots = nextPow(n, matchSize === 2 ? 2 : 4);
+  const seeded = [...players];
+  while (seeded.length < slots) seeded.push(null); // bye
+
+  // Round 1 matches
+  const rounds = [];
+  let currentPlayers = seeded;
+
+  while (currentPlayers.length > 1) {
+    const matches = [];
+    const groupSize = Math.min(matchSize, currentPlayers.length);
+    for (let i = 0; i < currentPlayers.length; i += groupSize) {
+      const group = currentPlayers.slice(i, i + groupSize);
+      matches.push({
+        id: `m_${rounds.length}_${matches.length}`,
+        players: group.map(p => p ? { username: p.username, elo: p.elo_at_join, player_id: p.player_id } : null),
+        winner: null,
+        bye: group.every(p => p === null) || (group.filter(Boolean).length === 1 ? group.find(Boolean)?.username : null)
+      });
+    }
+    rounds.push(matches);
+    // Next round: placeholders for winners
+    currentPlayers = matches.map(() => null);
+    if (currentPlayers.length <= 1) break;
+  }
+
+  return { rounds, matchSize };
+}
+
+function nextPow(n, base) {
+  let p = base;
+  while (p < n) p *= base;
+  return p;
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER BRACKET  (visual)
+// ═══════════════════════════════════════════════════
+function renderBracket(bracket, allPlayers) {
+  if (!bracket?.rounds?.length) return '';
+  const { rounds, matchSize } = bracket;
+  const roundNames = ['Quarter-finals','Semi-finals','Final','Grand Final'];
+
+  const html = rounds.map((matches, ri) => {
+    const title = ri === rounds.length - 1 ? '🏆 Final' :
+                  ri === rounds.length - 2 && rounds.length > 2 ? 'Semi-finals' :
+                  ri === 0 ? 'Round 1' : `Round ${ri + 1}`;
+    const matchHtml = matches.map(m => {
+      const slots = (m.players || []).map(p => {
+        if (!p) return `<div class="b-slot bye-slot"><span class="b-slot-name">BYE</span></div>`;
+        const isWinner = m.winner === p.username;
+        return `<div class="b-slot ${isWinner ? 'winner-slot' : m.winner ? 'loser-slot' : ''}">
+          <span class="b-slot-name">${p.username}</span>
+          <span class="b-slot-elo">${p.elo}</span>
+          ${isWinner ? '<span class="b-slot-score">✓</span>' : ''}
+        </div>`;
+      }).join('');
+      return `<div class="bracket-match">${slots}</div>`;
+    }).join('');
+    return `<div class="bracket-round"><div class="bracket-round-title">${title}</div><div class="bracket-matches">${matchHtml}</div></div>`;
+  }).join('');
+
+  return `<div class="bracket-wrap"><div class="bracket">${html}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  REPORT RESULT MODAL
+// ═══════════════════════════════════════════════════
+window.openReportModal = async function(tid) {
+  const { data: t } = await supabase.from('tournaments')
+    .select('*, tournament_players(player_id, username, elo_at_join)')
+    .eq('id', tid).single();
+  if (!t?.bracket) { toast('No bracket yet.'); return; }
+
+  // Find next unplayed match
+  const rounds = t.bracket.rounds;
+  let targetRound = -1, targetMatch = -1;
+  outer: for (let ri = 0; ri < rounds.length; ri++) {
+    for (let mi = 0; mi < rounds[ri].length; mi++) {
+      const m = rounds[ri][mi];
+      if (!m.winner && m.players.some(p => p)) { targetRound = ri; targetMatch = mi; break outer; }
+    }
+  }
+  if (targetRound < 0) { toast('All matches complete!'); return; }
+
+  const match = rounds[targetRound][targetMatch];
+  const activePlayers = match.players.filter(Boolean);
+
+  showModal(
+    `Report Result — Round ${targetRound + 1}`,
+    `Who won this match? (${activePlayers.map(p => p.username).join(' vs ')})`,
+    activePlayers.map(p => ({
+      label: `🏆 ${p.username} wins`,
+      fn: () => reportResult(tid, t.bracket, targetRound, targetMatch, p.username, t.tournament_players)
+    }))
+  );
+};
+
+async function reportResult(tid, bracket, roundIdx, matchIdx, winnerName, allPlayers) {
+  const rounds = bracket.rounds;
+  rounds[roundIdx][matchIdx].winner = winnerName;
+
+  // Advance winner to next round
+  if (roundIdx + 1 < rounds.length) {
+    const nextMatchIdx = Math.floor(matchIdx / (bracket.matchSize || 4));
+    const nextMatch = rounds[roundIdx + 1][nextMatchIdx];
+    if (nextMatch) {
+      const slot = nextMatch.players.findIndex(p => p === null || p === undefined);
+      const winnerData = rounds[roundIdx][matchIdx].players.find(p => p?.username === winnerName);
+      if (slot >= 0 && winnerData) nextMatch.players[slot] = winnerData;
+      else if (winnerData) nextMatch.players.push(winnerData);
+    }
+  }
+
+  // Check if tournament is done
+  const lastRound = rounds[rounds.length - 1];
+  const allDone = lastRound.every(m => m.winner);
+  const status = allDone ? 'done' : 'live';
+
+  await supabase.from('tournaments').update({ bracket, status }).eq('id', tid);
+
+  // Award ELO if done
+  if (allDone && supabase) {
+    const champion = lastRound[0].winner;
+    for (const p of allPlayers) {
+      const isWinner = p.username === champion;
+      const others = allPlayers.filter(x => x.username !== p.username);
+      const delta = calcElo(p.elo_at_join, others.map(x => x.elo_at_join), isWinner ? 'win' : 'loss');
+      await supabase.from('profiles').update({
+        elo_ffa: supabase.rpc ? undefined : undefined, // updated via elo_history
+        wins: isWinner ? supabase.rpc : undefined
+      }).eq('id', p.player_id);
+
+      await supabase.from('elo_history').insert({
+        player_id: p.player_id, delta, elo_after: p.elo_at_join + delta,
+        opponent: `Tournament: ${others.map(x => x.username).join(', ')}`,
+        result: isWinner ? 'win' : 'loss', mode: 'tournament'
+      });
+      await supabase.from('tournament_players').update({
+        result: isWinner ? 'winner' : 'eliminated'
+      }).eq('tournament_id', tid).eq('player_id', p.player_id);
+    }
+    toast(`🏆 Tournament complete! Champion: ${champion}`);
+  } else {
+    toast(`Result recorded. ${winnerName} advances!`);
+  }
+
+  closeModal();
+  loadTournaments();
+}
+
+// ═══════════════════════════════════════════════════
+//  DELETE TOURNAMENT
+// ═══════════════════════════════════════════════════
+window.deleteTournament = function(tid) {
+  showModal('Delete Tournament', 'Are you sure? This cannot be undone.', [
+    { label: '🗑 Delete', fn: async () => {
+      await supabase.from('tournament_players').delete().eq('tournament_id', tid);
+      await supabase.from('tournaments').delete().eq('id', tid);
+      closeModal(); toast('Tournament deleted.'); loadTournaments();
+    }},
+    { label: 'Cancel', fn: closeModal }
+  ]);
+};
+
+// ═══════════════════════════════════════════════════
+//  MODAL HELPER
+// ═══════════════════════════════════════════════════
+function showModal(title, body, buttons) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  document.getElementById('modal-err').textContent = '';
+  const btns = document.getElementById('modal-btns');
+  btns.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (b.secondary ? ' secondary' : '');
+    btn.textContent = b.label;
+    btn.onclick = b.fn;
+    btns.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+window.closeModal = closeModal;
+
+// ═══════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ═══════════════════════════════════════════════════
+window.goTab = function(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tabs = ['tab-home','tab-profile','tab-leaderboard','tab-tournaments'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(id)]?.classList.add('active');
+  if (id === 'tab-leaderboard') loadLeaderboard();
+  if (id === 'tab-tournaments') loadTournaments();
+  if (id === 'tab-profile') renderProfile();
+};
+
+// ═══════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════
+loadSession();
+</script>
+</body>
+</html>
